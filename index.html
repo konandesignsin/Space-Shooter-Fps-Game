@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AETHER NEON - 3D Space Flight Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Cockpit / Flight HUD Overlay -->
+    <div id="hud" class="hud-hidden">
+      <!-- Top Status Header -->
+      <header class="hud-top">
+        <div class="hud-box stat-group">
+          <div class="stat-label">HULL INTEGRITY</div>
+          <div class="bar-container">
+            <div id="hull-bar" class="bar-fill hull-color" style="width: 100%;"></div>
+          </div>
+          <div class="stat-meta"><span id="hull-text">100</span>%</div>
+        </div>
+
+        <div class="hud-box stat-group">
+          <div class="stat-label">DEFLECTOR SHIELDS</div>
+          <div class="bar-container">
+            <div id="shield-bar" class="bar-fill shield-color" style="width: 100%;"></div>
+          </div>
+          <div class="stat-meta"><span id="shield-text">100</span>%</div>
+        </div>
+
+        <div class="hud-box center-metrics">
+          <div class="metric-item">
+            <span class="metric-label">VELOCITY</span>
+            <span id="speed-val" class="metric-num">0</span>
+            <span class="metric-unit">M/S</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">BOOST</span>
+            <div class="boost-meter">
+              <div id="boost-bar" class="boost-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-box score-group">
+          <div class="stat-label">COMBAT SCORE</div>
+          <div id="score-val" class="big-score">00000</div>
+          <div class="combo-badge">COMBO <span id="combo-multiplier">x1.0</span></div>
+        </div>
+      </header>
+
+      <!-- Center Crosshair & Reticle -->
+      <div id="crosshair-wrapper">
+        <div class="crosshair-ring"></div>
+        <div class="crosshair-dot"></div>
+        <div class="horizon-lines">
+          <div class="horizon-ladder left"></div>
+          <div class="horizon-ladder right"></div>
+        </div>
+        <div id="target-lock-bracket" class="target-bracket hidden">
+          <div class="lock-indicator">TARGET LOCKED</div>
+          <div class="lock-distance"><span id="lock-dist-text">0</span>m</div>
+        </div>
+      </div>
+
+      <!-- HUD Bottom Cockpit Instruments -->
+      <footer class="hud-bottom">
+        <!-- Radar Scanner -->
+        <div class="hud-box radar-panel">
+          <div class="panel-header">SECTOR RADAR</div>
+          <div class="radar-display">
+            <canvas id="radar-canvas" width="160" height="160"></canvas>
+            <div class="radar-sweep"></div>
+          </div>
+          <div class="radar-legend">
+            <span class="legend-enemy">● ENEMY</span>
+            <span class="legend-ring">● BOOST RING</span>
+          </div>
+        </div>
+
+        <!-- Weapon Systems -->
+        <div class="hud-box weapons-panel">
+          <div class="panel-header">WEAPON SYSTEMS</div>
+          <div class="weapon-item">
+            <span class="weapon-name">TWIN PLASMA [L-CLICK/SPACE]</span>
+            <span id="weapon-laser-status" class="weapon-status ready">ONLINE</span>
+          </div>
+          <div class="weapon-item">
+            <span class="weapon-name">SEEKER MISSILE [R-CLICK/F]</span>
+            <span id="weapon-missile-status" class="weapon-status ready">ARMED (x<span id="missile-count">4</span>)</span>
+          </div>
+          <div class="view-mode-indicator">
+            VIEW: <span id="view-mode-text">3RD-PERSON CHASE</span> [C]
+          </div>
+        </div>
+      </footer>
+
+      <!-- Floating Combat Hit Marker & Messages -->
+      <div id="combat-alerts"></div>
+      <div id="speed-lines-overlay"></div>
+    </div>
+
+    <!-- Start / Launch Overlay Screen -->
+    <div id="start-overlay" class="modal-overlay">
+      <div class="modal-panel">
+        <div class="modal-badge">TACTICAL FLIGHT INTERFACE</div>
+        <h1 class="glow-title">AETHER NEON</h1>
+        <p class="subtitle">DEEP SPACE COMBAT INTERCEPTOR</p>
+
+        <div class="instructions-grid">
+          <div class="instruction-card">
+            <h3>🎮 FLIGHT CONTROLS</h3>
+            <ul>
+              <li><strong>Mouse / WASD</strong> : Pitch, Yaw & Roll</li>
+              <li><strong>Shift</strong> : Afterburner Boost</li>
+              <li><strong>C</strong> : Toggle Cockpit / Chase Camera</li>
+            </ul>
+          </div>
+          <div class="instruction-card">
+            <h3>⚔️ WEAPON SYSTEMS</h3>
+            <ul>
+              <li><strong>Left Click / Space</strong> : Twin Plasma Blasters</li>
+              <li><strong>Right Click / F</strong> : Lock-on Homing Missiles</li>
+              <li><strong>M</strong> : Toggle Synth Soundtrack</li>
+            </ul>
+          </div>
+          <div class="instruction-card">
+            <h3>⚡ MISSION OBJECTIVES</h3>
+            <ul>
+              <li>Fly through <strong>Neon Hyper-Rings</strong> for boost & combos</li>
+              <li>Neutralize rogue drone squadrons</li>
+              <li>Avoid colliding with dense asteroid belts</li>
+            </ul>
+          </div>
+        </div>
+
+        <button id="btn-start" class="glow-btn">INITIALIZE FLIGHT SYSTEMS</button>
+        <div class="audio-notice">🔊 Procedural Audio & Ambient Synthwave included</div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-overlay" class="modal-overlay hidden">
+      <div class="modal-panel">
+        <h1 class="glow-title danger">HULL COMPROMISED</h1>
+        <p class="subtitle">STARFIGHTER DESTROYED</p>
+        <div class="final-stats">
+          <div>FINAL SCORE: <span id="final-score" class="highlight">0</span></div>
+          <div>ENEMIES DESTROYED: <span id="final-kills" class="highlight">0</span></div>
+          <div>RINGS PASSED: <span id="final-rings" class="highlight">0</span></div>
+        </div>
+        <button id="btn-restart" class="glow-btn">REDEPLOY STARFIGHTER [R]</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
